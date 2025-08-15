@@ -1,6 +1,16 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+
+// Allow Safari’s legacy webkitAudioContext without using `any`
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
+
+
 const SEND_TO_SERVER = true; // set false if you want zero network requests
 
 // Coarse geo cell (~20–30 km)
@@ -49,17 +59,26 @@ export default function PrayerIntoTheEther() {
     }
 
     try {
-      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-      const ctx = new Ctx();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine"; o.frequency.value = 528;
-      g.gain.value = 0.0001; o.connect(g); g.connect(ctx.destination); o.start();
-      const now = ctx.currentTime;
-      g.gain.exponentialRampToValueAtTime(0.05, now + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.00001, now + 1.6);
-      o.stop(now + 1.7);
-    } catch {}
+      const Ctx = window.AudioContext ?? window.webkitAudioContext;
+      if (typeof Ctx === "function") {
+        const ctx = new Ctx();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = 528;
+        g.gain.value = 0.0001;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        const now = ctx.currentTime;
+        g.gain.exponentialRampToValueAtTime(0.05, now + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.00001, now + 1.6);
+        o.stop(now + 1.7);
+      }
+    } catch {
+      // ignore
+    }
+    
 
     setStatus("Releasing…");
 
