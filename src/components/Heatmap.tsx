@@ -4,6 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
+import type { LatLngExpression } from "leaflet";
+const c: LatLngExpression = [center.lat, center.lon];
+// then pass center={c}
+
+
+// add below your existing imports
+import type { ComponentType } from "react";
+
+// Create a TS-safe alias that accepts arbitrary props without `any`
+const MapContainerAny = MapContainer as unknown as ComponentType<Record<string, unknown>>;
+
+
 // Convert a "lat,lon" coarse cell string to numbers
 function parseCell(cell: string) {
   const [lat, lon] = cell.split(",").map(parseFloat);
@@ -53,15 +65,15 @@ export default function Heatmap() {
         </header>
 
         <div className="h-[70vh] w-full overflow-hidden rounded-xl ring-1 ring-neutral-800">
-          <MapContainer
-            center={[center.lat, center.lon]}
-            zoom={2}
-            minZoom={2}
-            maxZoom={10}
-            worldCopyJump
-            scrollWheelZoom
-            style={{ height: "100%", width: "100%" }}
-          >
+          <MapContainerAny
+              center={[center.lat, center.lon]}
+              zoom={2}
+              minZoom={2}
+              maxZoom={10}
+              worldCopyJump
+              scrollWheelZoom
+              style={{ height: "100%", width: "100%" }}
+            >
             {/* OpenStreetMap tiles via Carto CDN (no key needed). Swap if desired. */}
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
