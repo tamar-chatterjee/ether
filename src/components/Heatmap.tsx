@@ -1,26 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import type { LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Convert "lat,lon" to numbers
+// --- Types (no external @types needed) ---
+type LatLngExpression = [number, number];
+
+// Loosen react-leaflet component prop typing without using `any`
+const MapContainerAny = MapContainer as unknown as ComponentType<Record<string, unknown>>;
+const TileLayerAny = TileLayer as unknown as ComponentType<Record<string, unknown>>;
+const CircleMarkerAny = CircleMarker as unknown as ComponentType<Record<string, unknown>>;
+const TooltipAny = Tooltip as unknown as ComponentType<Record<string, unknown>>;
+
+// --- Helpers ---
 function parseCell(cell: string) {
   const [lat, lon] = cell.split(",").map(parseFloat);
   return { lat, lon };
 }
 
-// Simple radius scaling for a heat-like look
 function radiusFor(count: number) {
+  // soft log scale for a “heat-like” feel
   return Math.min(30, 6 + Math.log2(Math.max(1, count)) * 6);
 }
 
+// --- Component ---
 export default function Heatmap() {
   const [data, setData] = useState<{ cell: string; count: number }[]>([]);
 
   useEffect(() => {
     let alive = true;
+
     async function load() {
       try {
         const res = await fetch("/api/ether", { cache: "no-store" });
@@ -31,6 +41,7 @@ export default function Heatmap() {
         /* ignore */
       }
     }
+
     load();
     const id = setInterval(load, 10_000);
     return () => {
@@ -53,7 +64,7 @@ export default function Heatmap() {
         </header>
 
         <div className="h-[70vh] w-full overflow-hidden rounded-xl ring-1 ring-neutral-800">
-          <MapContainer
+          <MapContainerAny
             center={mapCenter}
             zoom={2}
             minZoom={2}
@@ -62,16 +73,13 @@ export default function Heatmap() {
             scrollWheelZoom
             style={{ height: "100%", width: "100%" }}
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
             {data.map(({ cell, count }) => {
               const { lat, lon } = parseCell(cell);
               const r = radiusFor(count);
               return (
-                <CircleMarker
+                <CircleMarkerAny
                   key={cell}
                   center={[lat, lon]}
                   radius={r}
@@ -82,17 +90,17 @@ export default function Heatmap() {
                     weight: 1,
                   }}
                 >
-                  <Tooltip direction="top" opacity={0.9}>
+                  <TooltipAny>
                     <div className="text-xs">
                       Cell: <span className="font-mono">{cell}</span>
                       <br />
                       Count: <strong>{count}</strong>
                     </div>
-                  </Tooltip>
-                </CircleMarker>
+                  </TooltipAny>
+                </CircleMarkerAny>
               );
             })}
-          </MapContainer>
+          </MapContainerAny>
         </div>
       </div>
     </div>
